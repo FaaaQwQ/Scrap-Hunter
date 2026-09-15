@@ -1,0 +1,15 @@
+id,role,type,description,size/ratio,style line ref,source
+style,shared visual formula,style,"Chunky flat cartoon machinery with bold deep teal outlines and oversized readable attachments. Menus use a forest green alien sky with a ringed planet and distant salvage cranes; combat uses muted sage dirt with tracks and scrap piles. The hero has warm ochre armor and cream highlights. Hazards glow coral and salvage shines mint. Metal plaques and amber mechanical buttons frame the UI. Use top-down gameplay and a large illustrated robot for menus.",all,style,procedural
+menu_scene,main menu world,canvas,Ringed planet salvage cranes scrap platform and large animated robot,responsive,style,procedural:game.js drawMenuScene
+robot,player and assembly preview,canvas,"Articulated scavenger with visible head arms core tracks and module",64x64,style,procedural:game.js drawRobot
+enemy_set,eight enemy types,canvas,"Scrap worm storm drone scavenger compactor charger splitter mine layer repair sentinel",24-64px,style,procedural:game.js drawEnemies
+boss,final wave enemy,canvas,Colossal crusher with telegraphed slams and radial shots,140px,style,procedural:game.js drawBoss
+ground,arena floor,canvas,Olive iron graveyard with scrap piles cracks and boundary stripes,1600x1100,style,procedural:game.js makeGround
+parts,inventory and equipment icons,svg,Mechanical attachment silhouettes for fifteen base and seven fusion parts,40x40,style,procedural:game.js partIcon
+effects,combat and pickup feedback,canvas,Knockback hit flash tracers explosions sparks damage numbers and salvage,variable,style,procedural:game.js render
+ui,interface,css,Industrial olive console ochre actions and readable typography,responsive,style,procedural:style.css
+shot,automatic attack,audio,Short dry mechanical pulse,0.06s,style,procedural:Web Audio
+hit,damage feedback,audio,Low metallic impact,0.12s,style,procedural:Web Audio
+pickup,collect salvage,audio,Bright short ascending electronic chirp,0.07s,style,procedural:Web Audio
+explosion,area damage,audio,Descending distorted bass burst,0.2s,style,procedural:Web Audio
+fusion,upgrade reward,audio,Ascending three note assembly confirmation,0.3s,style,procedural:Web Audio

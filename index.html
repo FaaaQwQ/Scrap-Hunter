@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#131714">
+  <title>废料猎人 · Scrap Hunter</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="assets/data.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-icon">S<span>H</span></span><span>废料猎人<small>SCRAP HUNTER</small></span></a><div class="sector"><i></i> 垃圾星球 / SECTOR 07</div><div class="tools"><button id="sound" aria-pressed="true">音效 开</button><button id="shake" aria-pressed="true">震屏 开</button><button id="pause">暂停 <kbd>ESC</kbd></button></div></header>
+  <main>
+    <section class="game-layout">
+      <div class="arena-column">
+        <div class="mission-bar"><div><span class="eyebrow">生存协议</span><strong id="wave-label">等待部署</strong></div><div class="wave-track" id="wave-track"></div><div class="clock"><span id="timer">00:40</span><small id="phase-label">准备就绪</small></div></div>
+        <div class="arena" id="arena">
+          <canvas id="world" aria-label="废料猎人战场，使用 WASD 或方向键移动，空格冲刺"></canvas>
+          <div class="combat-loot"><span>◆ <b id="hud-scrap">0</b><small>废铁</small></span><span>✕ <b id="hud-kills">0</b><small>击毁</small></span></div><div class="combat-heat"><span>♨ 热负载 <b id="hud-heat">43 / 100</b></span><div class="meter"><i id="hud-heat-bar"></i></div><small id="hud-over">系统稳定</small></div><div id="loadout-strip" aria-label="当前机体零件"></div><div class="arena-coordinate">07 / IRON GRAVEYARD<span>铁锈墓场</span></div>
+          <div id="toast" role="status" aria-live="polite"></div>
+          <div class="overlay" id="intro"><div class="intro-copy"><span class="tag">垃圾星球 · 生存行动</span><div class="title-kicker">SCRAP HUNTER</div><h1>废料<span>猎人</span></h1><p>捡垃圾，拼机器人，合出离谱武器。<br><span>十波之后，废铁也能成为传奇。</span></p><button class="primary big" id="start">出发！去捡垃圾 <span>▶</span></button><div class="intro-meta"><span>01 号机 / 拾荒者</span><span>10 波生存 · 自动攻击</span></div></div><div class="intro-bottom"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</span><span><kbd>SPACE</kbd> 冲刺</span><span>攻击？交给机器。</span><span class="touch-tip">左手摇杆移动 · 右手点击冲刺 · 自动攻击</span></div></div>
+          <div class="overlay hidden centered" id="pause-screen"><span class="eyebrow">SYSTEM ON HOLD</span><h2>喘口气，猎人。</h2><p>战斗已暂停。</p><button class="primary" id="resume">继续回收 →</button></div>
+          <div class="overlay hidden centered" id="result"><span class="eyebrow" id="result-tag"></span><h2 id="result-title"></h2><p id="result-copy"></p><button class="primary" id="restart">再拼一台 →</button></div>
+          <div class="touch-controls"><div id="joystick"><span></span></div><button id="dash-touch">冲刺</button></div>
+          <div class="battle-bottom"><div class="health-block"><span>机体完整度 <b id="hp-label">100 / 100</b></span><div class="meter"><i id="hp-bar"></i></div></div><div class="dash-status" id="dash-status">冲刺就绪 <kbd>SPACE</kbd></div></div>
+        </div>
+        <footer class="arena-footer"><span><i></i> 回收协议 v1.0</span><span>移动生存 / 自动开火 / 波后改装</span><span id="kill-count">击毁 000</span></footer>
+      </div>
+      <aside class="sidebar"><div class="panel-head"><span>你的战斗机体</span><span class="live">● LIVE</span></div><div class="robot-name"><span class="unit-number">01</span><div><h2>拾荒者</h2><p>SCAVENGER / 通用机体</p></div></div><div class="resources"><div><small>废铁 / 修理与融合</small><strong id="scrap">0</strong></div><div><small>累计击毁</small><strong id="kills">0</strong></div></div><div class="heat-panel"><div class="section-title">热负载 <b id="heat-label">30 / 100</b></div><div class="meter heat"><i id="heat-bar"></i></div><p id="heat-description">散热正常，所有系统在线。</p><div class="overheat-line">过热积累 <span id="overheat">0%</span></div></div><div class="section-title loadout-title">身体接口 <span>6 PORTS</span></div><div class="assembly-stage"><canvas id="robot-preview" width="400" height="360" aria-label="已安装零件的机器人预览"></canvas><div id="loadout"></div><span class="assembly-caption">01 / 拾荒者</span></div><div class="synergy-box"><span class="eyebrow">联动协议</span><div id="synergies">等待新零件接入。</div></div><p class="side-note">不是每一块废铁都没用。<br>有些只是还没找到另一半。</p></aside>
+    </section>
+    <section id="workshop" class="workshop hidden" aria-label="波后改装台"><div class="workshop-header"><div><span class="eyebrow">THE GARAGE / 第七回收站</span><h2>把废铁，装成狠角色。</h2><p id="wave-summary"></p></div><button class="primary" id="next-wave">进入下一波 →</button></div><div class="workshop-grid"><div class="parts-bench"><div class="section-title">回收奖励 <span>三选一 · 免费</span></div><div id="rewards" class="reward-grid"></div><div class="section-title inventory-heading">零件仓库 <span>点选后点击机体接口，或拖拽安装</span></div><div id="inventory" class="inventory-grid"></div></div><div class="forge"><div class="section-title">零件融合器 <span>JUNK FORGE</span></div><p>将仓库零件放入融合槽。相同零件可升级，不同零件可发现新配方。</p><div class="forge-slots"><button id="forge-a">＋<small>选择零件后点击</small></button><span>+</span><button id="forge-b">＋<small>选择零件后点击</small></button></div><div id="forge-preview">等待两件零件接入…</div><button id="fuse" class="secondary" disabled>融合 / 12 废铁</button><button id="clear-forge" disabled>取回融合材料</button><div class="selected-actions"><button id="repair" disabled>修理所选</button><button id="sell" disabled>出售所选</button></div><div id="install-actions" aria-label="安装所选零件"></div><p id="selection-info">点击仓库零件，或机体上已安装的零件进行管理。</p><details><summary>已知融合配方 / 操作指南</summary><p>电锯 + 喷火器 → 火焰电锯<br>激光头 + 分裂模块 → 散射激光<br>磁吸模块 + 火箭臂 → 磁吸火箭<br>无人机仓 + 电击芯片 → 雷电无人机<br>护盾核心 + 电锯 → 反伤护盾<br>喷火器 + 磁吸模块 → 磁暴喷火器<br><br>隐藏配方：让火焰与磁力先相遇，再接入爆炸芯片。<br><br>选择已安装零件可拆下、修理或出售。损坏零件停止工作。融合消耗两件材料，恢复耐久。品质最高为金色。</p></details><button id="unequip" disabled>拆下所选零件</button></div></div></section>
+    <div class="page-foot"><span>SCRAP HUNTER</span><span>ONE ROBOT. ENDLESS BAD IDEAS.</span><span>拾荒者生存手册 / 001</span></div>
+  </main>
+</body>
+</html>
+
