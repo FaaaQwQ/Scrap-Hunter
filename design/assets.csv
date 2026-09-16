@@ -7,9 +7,10 @@ boss,final wave enemy,canvas,Colossal crusher with telegraphed slams and radial 
 ground,arena floor,canvas,Olive iron graveyard with scrap piles cracks and boundary stripes,1600x1100,style,procedural:game.js makeGround
 parts,inventory and equipment icons,svg,Mechanical attachment silhouettes for fifteen base and seven fusion parts,40x40,style,procedural:game.js partIcon
 effects,combat and pickup feedback,canvas,Knockback hit flash tracers explosions sparks damage numbers and salvage,variable,style,procedural:game.js render
-ui,interface,css,Industrial olive console ochre actions and readable typography,responsive,style,procedural:style.css
+ui,interface,css,Mechanical cockpit switches recessed sockets central assembly bay and segmented gauges,responsive,style,procedural:style.css
 shot,automatic attack,audio,Short dry mechanical pulse,0.06s,style,procedural:Web Audio
 hit,damage feedback,audio,Low metallic impact,0.12s,style,procedural:Web Audio
 pickup,collect salvage,audio,Bright short ascending electronic chirp,0.07s,style,procedural:Web Audio
 explosion,area damage,audio,Descending distorted bass burst,0.2s,style,procedural:Web Audio
 fusion,upgrade reward,audio,Ascending three note assembly confirmation,0.3s,style,procedural:Web Audio
+projectiles,weapon readability,canvas,"Cream tracer cores mint drone pulses armored rockets coral enemy rounds and directional impact sparks",variable,style,procedural:game.js render

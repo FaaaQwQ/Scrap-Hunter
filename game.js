@@ -12,6 +12,9 @@
   const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
   const dev = new URLSearchParams(location.search).has('dev');
   let rng = 7, uid = 0, state, viewW = 1000, viewH = 660, scale = 1, camX=0, camY=0;
+  let inventoryPage=0, garagePanel='all';
+  const compactGarage=()=>innerWidth<1100 || innerHeight<650;
+  const inventoryPageSize=()=>innerWidth<600?4:6;
   let selected = null, forge = [null,null], keys = new Set(), touchX=0,touchY=0,touchDash=false;
   let audio, sound=true, shake=true, toastUntil=0, lastSound=0, accumulator=0, last=performance.now();
   let renderClock=0, frames=0, fps=60, fpsAt=last, uiClock=0, shakePower=0;
@@ -58,7 +61,7 @@
   function beep(type) {
     if(!sound || !audio || audio.state!=='running')return;
     const now=audio.currentTime;if(type==='shot' && now-lastSound<.085)return;lastSound=now;
-    const settings={shot:[180,70,.055,'square',.016],hit:[110,40,.12,'sawtooth',.035],pickup:[650,1100,.07,'sine',.018],explosion:[100,25,.2,'sawtooth',.04],fusion:[400,1400,.3,'triangle',.035]};
+    const settings={shot:[180,70,.055,'square',.016],hit:[110,40,.12,'sawtooth',.035],pickup:[650,1100,.07,'sine',.018],explosion:[100,25,.2,'sawtooth',.04],fusion:[400,1400,.3,'triangle',.035],switch:[220,95,.035,'square',.012]};
     const [a,b,d,w,v]=settings[type],osc=audio.createOscillator(),gain=audio.createGain();
     osc.type=w;osc.frequency.setValueAtTime(a,now);osc.frequency.exponentialRampToValueAtTime(b,now+d);
     gain.gain.setValueAtTime(v,now);gain.gain.exponentialRampToValueAtTime(.0001,now+d);
@@ -72,7 +75,7 @@
     keys.clear();selected=null;forge=[null,null];refreshStats();
     document.querySelector('.game-layout').append(document.querySelector('.sidebar'));
     $('intro').classList.add('hidden');$('workshop').classList.add('hidden');document.body.classList.remove('workshop-active');
-    $('arena').scrollIntoView({block:'center',behavior:'smooth'});
+
     if(state.wave===10){spawnEnemy(8);toast(T.bossIncoming);}else if(state.wave<=8)toast(`${T.wave} ${state.wave} · ${T.newEnemy}：${EN[state.wave-1].name}`);
     updateUI();renderLoadout();audioInit();
   }
@@ -83,7 +86,7 @@
     state.drops=[];state.enemies=[];state.shots=[];state.mines=[];
     state.scrap+=22+state.wave*3;state.player.hp=Math.min(state.player.maxHp,state.player.hp+30);
     for(const p of Object.values(state.equipment))if(p)p.dur=Math.max(0,p.dur-3);
-    state.phase='workshop';state.rewards=[];state.rewardTaken=false;
+    state.phase='workshop';state.rewards=[];state.rewardTaken=false;inventoryPage=0;garagePanel=compactGarage()?'rewards':'all';
     const candidates=[...BASE];
     for(let n=0;n<3;n++){const i=Math.floor(rngNext()*candidates.length);state.rewards.push(makePart(candidates.splice(i,1)[0],state.wave>=6 && rngNext()<.4?1:0));}
     // Two salvaged parts ensure fusion choices are available beyond the single reward.
@@ -93,7 +96,7 @@
     document.querySelector('.workshop-grid').prepend(document.querySelector('.sidebar'));
     $('workshop').classList.remove('hidden');document.body.classList.add('workshop-active');
     toast(T.waveClear);refreshStats();renderWorkshop();updateUI();
-    $('workshop').scrollIntoView({behavior:'smooth',block:'start'});
+
   }
   function finishGame(win){state.phase=win?'win':'lose';$('result').classList.remove('hidden');$('result-tag').textContent=win?T.winTag:T.loseTag;$('result-title').textContent=win?T.winTitle:T.loseTitle;$('result-copy').textContent=`${win?T.winCopy:T.loseCopy} ${T.wave} ${state.wave}/10 · ${T.kill} ${state.kills} · ${Math.floor(state.totalTime/60)}m ${Math.floor(state.totalTime%60)}s`;$('pause-screen').classList.add('hidden');beep(win?'fusion':'explosion');updateUI();}
   function togglePause(){if(state.phase==='battle'){state.phase='paused';keys.clear();touchX=touchY=0;touchDash=false;$('pause-screen').classList.remove('hidden');audio?.suspend();}else if(state.phase==='paused'){state.phase='battle';$('pause-screen').classList.add('hidden');audioInit();}updateUI();}
@@ -205,7 +208,7 @@
     for(let i=state.shots.length-1;i>=0;i--){const b=state.shots[i];b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;let remove=b.life<=0||b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT;
       if(b.enemy){if(Math.hypot(b.x-p.x,b.y-p.y)<p.r+b.r){hurtPlayer(b.damage);remove=true;}}
       else for(const e of state.enemies)if(!e.dead && Math.hypot(b.x-e.x,b.y-e.y)<e.r+b.r){
-        if(b.kind==='rocket'||b.kind==='magRocket'){if(b.kind==='magRocket')for(const other of state.enemies)if(dist(e,other)<200 && other.type!==8){other.x+=(e.x-other.x)*.5;other.y+=(e.y-other.y)*.5;}blast(b.x,b.y,b.kind==='magRocket'?155:90,b.damage);}else hit(e,b.damage,false,28);remove=true;break;}
+        if(b.kind==='rocket'||b.kind==='magRocket'){if(b.kind==='magRocket')for(const other of state.enemies)if(dist(e,other)<200 && other.type!==8){other.x+=(e.x-other.x)*.5;other.y+=(e.y-other.y)*.5;}blast(b.x,b.y,b.kind==='magRocket'?155:90,b.damage);}else {hit(e,b.damage,false,28);effect(b.x,b.y,19,b.kind==='drone'?'#a0e8dd':'#ffd487',.18,'impact',Math.atan2(b.vy,b.vx));}remove=true;break;}
       if(remove)state.shots.splice(i,1);
     }
     for(let i=state.mines.length-1;i>=0;i--){const m=state.mines[i];m.age+=dt;m.life-=dt;if(m.age>1 && dist(m,p)<55){effect(m.x,m.y,65,'#df7655',.4,'burst');hurtPlayer(16);m.life=0;}if(m.life<=0)state.mines.splice(i,1);}
@@ -220,9 +223,9 @@
 
   // Inventory is only mutable in the safe workshop; every action is validated here.
   function getRecipe(a,b){if(!a||!b||a.uid===b.uid)return null;if(a.id===b.id && a.q===b.q && a.q<3)return {id:a.id,q:a.q+1};for(const r of recipes)if((a.id===r[0]&&b.id===r[1])||(b.id===r[0]&&a.id===r[1]))return {id:r[2],q:Math.max(a.q,b.q)};return null;}
-  function install(slot,id=selected){if(state.phase!=='workshop')return;const index=state.inventory.findIndex(p=>p.uid===id);if(index<0){selected=state.equipment[slot]?.uid??null;renderWorkshop();return;}const item=state.inventory[index];if(!P[item.id].slots.includes(slot)){toast(T.wrongSlot);return;}state.inventory.splice(index,1);if(state.equipment[slot])state.inventory.push(state.equipment[slot]);state.equipment[slot]=item;forge=forge.map(x=>x===item.uid?null:x);selected=item.uid;refreshStats();renderWorkshop();toast(T.installed);}
+  function install(slot,id=selected){if(state.phase!=='workshop')return;const index=state.inventory.findIndex(p=>p.uid===id);if(index<0){selected=state.equipment[slot]?.uid??null;if(compactGarage() && selected!==null)garagePanel='forge';renderWorkshop();return;}const item=state.inventory[index];if(!P[item.id].slots.includes(slot)){toast(T.wrongSlot);return;}state.inventory.splice(index,1);if(state.equipment[slot])state.inventory.push(state.equipment[slot]);state.equipment[slot]=item;forge=forge.map(x=>x===item.uid?null:x);selected=item.uid;refreshStats();renderWorkshop();document.querySelector(`[data-slot="${slot}"]`)?.classList.add('just-installed');beep('switch');toast(T.installed);}
   function removePart(item){const index=state.inventory.indexOf(item);if(index>=0)state.inventory.splice(index,1);else for(const slot of SLOT_KEYS)if(state.equipment[slot]===item)state.equipment[slot]=null;forge=forge.map(x=>x===item.uid?null:x);}
-  function fuse(){if(state.phase!=='workshop')return;const a=state.inventory.find(p=>p.uid===forge[0]),b=state.inventory.find(p=>p.uid===forge[1]),recipe=getRecipe(a,b);if(!recipe)return;if(state.scrap<12){toast(T.noScrap);return;}state.scrap-=12;removePart(a);removePart(b);const result=makePart(recipe.id,recipe.q);state.inventory.push(result);selected=result.uid;forge=[null,null];renderWorkshop();beep('fusion');toast(`${T.fused}：${partName(result)}`);}
+  function fuse(){if(state.phase!=='workshop')return;const a=state.inventory.find(p=>p.uid===forge[0]),b=state.inventory.find(p=>p.uid===forge[1]),recipe=getRecipe(a,b);if(!recipe)return;if(state.scrap<12){toast(T.noScrap);return;}state.scrap-=12;removePart(a);removePart(b);const result=makePart(recipe.id,recipe.q);state.inventory.push(result);selected=result.uid;forge=[null,null];renderWorkshop();const housing=document.querySelector('.forge');housing.classList.remove('just-fused');void housing.offsetWidth;housing.classList.add('just-fused');beep('fusion');toast(`${T.fused}：${partName(result)}`);}
   function repair(){if(state.phase!=='workshop')return;const item=currentPart();if(!item||item.dur>=100)return;const cost=Math.ceil((100-item.dur)*.18)+2;if(state.scrap<cost){toast(T.noScrap);return;}state.scrap-=cost;item.dur=100;refreshStats();renderWorkshop();toast(T.repaired);}
   function partIcon(kind){const shapes={saw:'<circle cx="20" cy="20" r="12"/><path d="M20 2v7m0 22v7M2 20h7m22 0h7M7 7l5 5m16 16 5 5M7 33l5-5M28 12l5-5"/><circle cx="20" cy="20" r="4"/>',flame:'<path d="M22 3C28 17 36 18 30 30S6 38 8 23c1-6 5-9 8-13-1 8 5 8 6-7Z"/>',laser:'<path d="m7 30 12-12m2-2L33 4M8 17l15 15M5 20l15 15M25 5l10 10"/>',tracks:'<rect x="4" y="9" width="32" height="22" rx="10"/><circle cx="13" cy="20" r="5"/><circle cx="27" cy="20" r="5"/>',shield:'<path d="M20 3 34 9v11c0 9-14 17-14 17S6 29 6 20V9Z"/><path d="M20 12v14m-7-7h14"/>',magnet:'<path d="M7 6v15a13 13 0 0 0 26 0V6h-9v15a4 4 0 0 1-8 0V6Z"/>',drone:'<rect x="13" y="13" width="14" height="14" rx="3"/><path d="m6 6 9 9m10 10 9 9M6 34l9-9M25 15l9-9M1 6h10M29 6h10M1 34h10m18 0h10"/>',battery:'<rect x="8" y="7" width="24" height="29" rx="3"/><path d="M15 3h10m-6 9-5 11h9l-4 9"/>',rocket:'<path d="M17 29 9 21C11 11 24 5 34 5c0 10-6 23-17 24ZM9 21l-5 9 10-3m3 2-4 8 12-7M10 31l-6 6"/><circle cx="25" cy="14" r="4"/>',chip:'<rect x="10" y="10" width="20" height="20" rx="3"/><path d="M15 3v7m10-7v7M15 30v7m10-7v7M3 15h7m-7 10h7m20-10h7m-7 10h7"/><path d="m22 14-6 7h8l-6 6"/>'};return `<svg viewBox="0 0 40 40" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[kind]||shapes.chip}</svg>`;}
   function renderLoadout(){
@@ -231,11 +234,11 @@
     $('loadout-strip').innerHTML=SLOT_KEYS.map(slot=>{const part=state.equipment[slot];return `<span title="${SLOTS[slot]} · ${part?P[part.id].name:T.empty}" style="opacity:${part?1:.45}">${partIcon(part?P[part.id].kind:'chip')}<small>${SLOTS[slot]}</small></span>`;}).join('');
     const synergies=[];if(active('saw')&&active('tracks'))synergies.push(T.synergySaw);if(active('drone')&&active('battery'))synergies.push(T.synergyDrone);if(active('magnet')&&active('explosive'))synergies.push(T.synergyMag);if(active('saw')&&active('vampire'))synergies.push(T.synergyVamp);$('synergies').textContent=synergies.join(' / ')||T.noSynergy;
   }
-  function card(item,reward=false){const d=P[item.id],button=document.createElement('button');button.className='part-card'+(selected===item.uid?' selected':'');button.style.setProperty('--quality',QC[item.q]);button.dataset.part=item.id;button.dataset.uid=item.uid;button.innerHTML=`<span class="part-icon">${partIcon(d.kind)}</span><strong>${d.name}</strong><small>${Q[item.q]} · ${d.slots.map(s=>SLOTS[s]).join(' / ')}</small><p>${d.desc}</p><span class="part-stats">${T.heat} +${heatOf(item)} · ${T.durability} ${Math.ceil(item.dur)}%</span>`;
-    button.onclick=()=>{if(state.phase!=='workshop')return;if(reward){if(state.rewardTaken)return;state.inventory.push(item);state.rewardTaken=true;selected=item.uid;beep('pickup');toast(`${T.got}：${d.name}`);}else selected=selected===item.uid?null:item.uid;renderWorkshop();};
+  function card(item,reward=false){const d=P[item.id],button=document.createElement('button');button.className='part-card'+(selected===item.uid?' selected':'');button.style.setProperty('--quality',QC[item.q]);button.dataset.part=item.id;button.dataset.uid=item.uid;button.innerHTML=`<span class="part-icon">${partIcon(d.kind)}</span><strong>${d.name}</strong><small>${Q[item.q]} · ${d.slots.map(s=>SLOTS[s]).join(' / ')}</small><p>${d.desc}</p><span class="part-stats">${T.heat} +${heatOf(item)} · ${T.durability} ${Math.ceil(item.dur)}%</span><span class="part-wear" style="--wear:${clamp(item.dur,0,100)}%" aria-hidden="true"><i></i></span>`;
+    button.onclick=()=>{if(state.phase!=='workshop')return;if(reward){if(state.rewardTaken)return;state.inventory.push(item);state.rewardTaken=true;selected=item.uid;inventoryPage=Math.floor((state.inventory.length-1)/inventoryPageSize());if(compactGarage())garagePanel='inventory';beep('pickup');toast(`${T.got}：${d.name}`);}else {selected=selected===item.uid?null:item.uid;if(compactGarage() && selected!==null)garagePanel='forge';}renderWorkshop();};
     if(!reward){button.draggable=true;button.ondragstart=e=>{selected=item.uid;e.dataTransfer.setData('text/plain',String(item.uid));};}return button;}
   function renderWorkshop(){
-    renderLoadout();updateUI();$('inventory').innerHTML='';for(const item of state.inventory)$('inventory').append(card(item));if(!state.inventory.length)$('inventory').textContent=T.emptyInventory;
+    renderLoadout();updateUI();const pageSize=inventoryPageSize(),pageCount=Math.max(1,Math.ceil(state.inventory.length/pageSize));inventoryPage=clamp(inventoryPage,0,pageCount-1);$('inventory').innerHTML='';for(const item of state.inventory.slice(inventoryPage*pageSize,(inventoryPage+1)*pageSize))$('inventory').append(card(item));$('inventory-page').textContent=`${inventoryPage+1} / ${pageCount} · ${state.inventory.length} 件零件`;$('inventory-prev').disabled=inventoryPage===0;$('inventory-next').disabled=inventoryPage===pageCount-1;if(!state.inventory.length)$('inventory').textContent=T.emptyInventory;
     $('rewards').innerHTML='';$('rewards').classList.toggle('claimed',state.rewardTaken);if(state.rewardTaken)$('rewards').textContent=T.rewardDone;else for(const item of state.rewards)$('rewards').append(card(item,true));
     $('next-wave').disabled=!state.rewardTaken;$('next-wave').textContent=state.rewardTaken?T.next:T.needReward;
     const materials=forge.map(id=>state.inventory.find(p=>p.uid===id));
@@ -257,6 +260,22 @@
     }
     $('clear-forge').disabled=!forge.some(Boolean);
     $('selection-info').textContent=item?`${partName(item)} · ${T.durability} ${Math.ceil(item.dur)}% · ${P[item.id].desc}`:T.selectHelp;
+    applyGaragePanel();requestAnimationFrame(fitGarage);
+  }
+  function applyGaragePanel(){
+    if(compactGarage() && garagePanel==='all')garagePanel=state.rewardTaken?'inventory':'rewards';
+    $('workshop').dataset.panel=garagePanel;
+    for(const button of document.querySelectorAll('.garage-tabs button'))button.setAttribute('aria-pressed',String(button.dataset.panel===garagePanel));
+  }
+  function fitGarage(){
+    if(state.phase!=='workshop')return;
+    const stage=document.querySelector('.workshop-stage'),grid=document.querySelector('.workshop-grid');
+    grid.style.width=(garagePanel==='all'?stage.clientWidth:Math.min(stage.clientWidth,garagePanel==='machine'?1060:760))+'px';
+    grid.style.setProperty('--garage-scale',1);
+    grid.style.height=garagePanel==='machine'?'100%':'';
+    if(garagePanel==='machine')return;
+    const h=grid.scrollHeight,w=grid.scrollWidth;
+    grid.style.setProperty('--garage-scale',Math.min(1,(stage.clientHeight-4)/Math.max(1,h),(stage.clientWidth-4)/Math.max(1,w)));
   }
   function updateUI(){
     document.body.dataset.phase=state.phase;
@@ -353,9 +372,38 @@
     for(let kind=0;kind<4;kind++){ctx.fillStyle=['#8ecbb5','#a8d7d0','#d7da84','#e9b86c'][kind];ctx.beginPath();for(const d of state.drops)if(d.kind===kind){const r=kind===3?6:4,y=d.y+Math.sin(d.age*5)*2;ctx.moveTo(d.x,y-r);ctx.lineTo(d.x+r,y);ctx.lineTo(d.x,y+r);ctx.lineTo(d.x-r,y);ctx.closePath();}ctx.fill();}
     for(const m of state.mines){circle(m.x,m.y,9,'#514330','#c2945d');circle(m.x,m.y,3,m.age>1?'#ec7858':'#e2c785');if(m.age>1)circle(m.x,m.y,20+Math.sin(renderClock*7)*3,null,'#d5824d55');}
     drawEnemies();
-    for(let kind=0;kind<2;kind++){ctx.fillStyle=kind?'#e68b66':'#f2d889';ctx.beginPath();for(const b of state.shots)if(Number(b.enemy)===kind){ctx.moveTo(b.x+b.r,b.y);ctx.arc(b.x,b.y,b.r,0,TAU);}ctx.fill();}
+    // Trails are drawn analytically: no per-frame particle allocations.
+    for(const b of state.shots){
+      const rocket=b.kind==='rocket'||b.kind==='magRocket',mint=b.kind==='drone'||b.kind==='magRocket';
+      const color=b.enemy?'#fa876a':mint?'#8ee5dc':'#ffcf69';
+      const length=Math.min((2-b.life)*Math.hypot(b.vx,b.vy),rocket?34:b.enemy?13:24);
+      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));ctx.lineCap='round';
+      ctx.globalAlpha=.2;ctx.strokeStyle=color;ctx.lineWidth=rocket?12:b.enemy?10:7;
+      ctx.beginPath();ctx.moveTo(-length,0);ctx.lineTo(0,0);ctx.stroke();
+      ctx.globalAlpha=.65;ctx.lineWidth=rocket?5:2;ctx.beginPath();ctx.moveTo(-length*.75,0);ctx.lineTo(0,0);ctx.stroke();ctx.globalAlpha=1;
+      if(rocket){
+        ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(-7,-3);ctx.lineTo(-16-4*Math.sin(renderClock*35),0);ctx.lineTo(-7,3);ctx.fill();
+        ctx.fillStyle='#e8edcd';ctx.strokeStyle='#193d32';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(2,-5);ctx.lineTo(-7,-5);ctx.lineTo(-7,5);ctx.lineTo(2,5);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.fillStyle=color;ctx.fillRect(-3,-3,4,6);
+      }else if(b.enemy){
+        ctx.strokeStyle='#502c28';ctx.lineWidth=2;ctx.fillStyle=color;
+        ctx.beginPath();ctx.arc(0,0,5.5,0,TAU);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#ffe6bd';ctx.fillRect(-1.5,-1.5,3,3);
+      }else{
+        ctx.strokeStyle='#25483b';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(3,0);ctx.stroke();
+        ctx.strokeStyle=color;ctx.lineWidth=4;ctx.stroke();ctx.strokeStyle='#ffffdc';ctx.lineWidth=1.5;ctx.stroke();
+      }
+      ctx.restore();
+    }
     for(const f of state.fx){ctx.save();ctx.globalAlpha=clamp(f.life/f.max,0,1);ctx.strokeStyle=f.color;ctx.fillStyle=f.color;ctx.lineWidth=3;const progress=1-f.life/f.max;
-      if(f.kind==='line'){ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x2,f.y2);ctx.stroke();}
+      if(f.kind==='line'){
+        ctx.lineCap='round';ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x2,f.y2);
+        ctx.globalAlpha*=.2;ctx.lineWidth=12;ctx.stroke();ctx.globalAlpha=Math.min(1,f.life/f.max);ctx.lineWidth=4;ctx.stroke();ctx.strokeStyle='#fffde5';ctx.lineWidth=1.4;ctx.stroke();ctx.lineCap='butt';
+      }else if(f.kind==='impact'){
+        const age=1-f.life/f.max;ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();
+        for(let i=0;i<5;i++){const a=f.x2+(i-2)*.7,r=4+age*f.r;ctx.moveTo(f.x+Math.cos(a)*r*.45,f.y+Math.sin(a)*r*.45);ctx.lineTo(f.x+Math.cos(a)*r,f.y+Math.sin(a)*r);}ctx.stroke();ctx.lineCap='butt';
+      }
       else if(f.kind==='flame'){ctx.globalAlpha*=.24;ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.arc(f.x,f.y,f.r*(.75+progress*.25),f.x2-.6,f.x2+.6);ctx.closePath();ctx.fill();}
       else if(f.kind==='arc'){ctx.lineWidth=6;ctx.beginPath();ctx.arc(f.x,f.y,f.r*.8,f.x2+progress*TAU,f.x2+progress*TAU+Math.PI);ctx.stroke();}
       else if(f.kind==='trail'){ctx.globalAlpha*=.25;circle(f.x,f.y,f.r,f.color);}
@@ -392,6 +440,11 @@
   $('clear-forge').onclick=()=>{if(state.phase!=='workshop')return;forge=[null,null];renderWorkshop();};$('fuse').onclick=fuse;$('repair').onclick=repair;
   $('sell').onclick=()=>{if(state.phase!=='workshop')return;const item=currentPart();if(!item)return;state.scrap+=5+item.q*4;removePart(item);selected=null;refreshStats();renderWorkshop();toast(T.sold);};
   $('unequip').onclick=()=>{if(state.phase!=='workshop')return;const item=currentPart();if(!item||state.inventory.includes(item))return;removePart(item);state.inventory.push(item);refreshStats();renderWorkshop();toast(T.removed);};
+  for(const button of document.querySelectorAll('.garage-tabs button'))button.onclick=()=>{garagePanel=button.dataset.panel;beep('switch');applyGaragePanel();fitGarage();};
+  $('inventory-prev').onclick=()=>{inventoryPage--;renderWorkshop();};
+  $('inventory-next').onclick=()=>{inventoryPage++;renderWorkshop();};
+  document.querySelector('.forge details').addEventListener('toggle',fitGarage);
+  addEventListener('resize',()=>{if(state.phase==='workshop'){applyGaragePanel();renderWorkshop();}});
   new ResizeObserver(resize).observe($('arena'));addEventListener('orientationchange',resize);
   makeGround();reset();resize();
   // Explicit developer-only hooks for deterministic loop and inventory verification.
